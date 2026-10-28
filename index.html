@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>辽夏金的治理</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(circle at 20% 0%, #fbf4e8 0%, #f1e5d3 55%, #eaddc7 100%);
+    color: #3a2f28;
+    font-size: 18px;
+    -webkit-user-select: none;
+    user-select: none;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 34px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== 标题 ===== */
+  header h1 {
+    margin: 0 0 6px;
+    font-size: 30px;
+    letter-spacing: 4px;
+    color: #7e2b26;
+  }
+  header h1::after {
+    content: "";
+    display: block;
+    width: 58px; height: 3px;
+    margin-top: 7px;
+    background: #b5493a;
+    border-radius: 2px;
+  }
+  .sub {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #8d7a66;
+  }
+  .sub b { color: #b5493a; }
+
+  /* ===== 进度条 ===== */
+  .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 14px 0;
+    font-size: 16px; color: #7a6753;
+  }
+  .bar b { color: #b5493a; font-size: 22px; }
+  .bar button {
+    font-family: inherit; font-size: 15px; cursor: pointer;
+    padding: 8px 18px; border-radius: 999px;
+    border: 1px solid #cbb79a; background: #fffdf8; color: #7a6753;
+    transition: all .18s;
+  }
+  .bar button:hover { background: #7e2b26; border-color: #7e2b26; color: #fff; }
+
+  /* ===== 三列布局 ===== */
+  .board {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .column {
+    background: #fffdf8;
+    border: 2px dashed #d9c7ab;
+    border-radius: 16px;
+    padding: 12px 12px 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .column.middle {
+    background: #eaf2fb;
+    border: 2px solid #a8c6e2;
+  }
+  .col-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #a48b6e;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ece0cd;
+  }
+  .column.middle .col-title {
+    color: #3d6f9e;
+    border-bottom-color: #c3d8ea;
+  }
+
+  .card-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 11px;
+    flex: 1;
+  }
+  .card-stack:empty::before {
+    content: "已全部归位";
+    text-align: center;
+    font-size: 15px;
+    color: #cdbfa9;
+    letter-spacing: 2px;
+  }
+
+  /* ===== 卡片 ===== */
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f0e3 100%);
+    border: 1px solid #e3d2b8;
+    border-left: 7px solid #b5493a;
+    border-radius: 11px;
+    padding: 14px 12px;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #463830;
+    text-align: center;
+    cursor: grab;
+    touch-action: none;
+    box-shadow: 0 2px 7px rgba(120, 90, 60, .13);
+    transition: transform .16s, box-shadow .16s, opacity .2s;
+  }
+  .card[data-cat="founder"] { border-left-color: #c79a3a; }
+  .card[data-cat="govern"]  { border-left-color: #b5493a; }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(120, 90, 60, .22);
+  }
+  .card.dragging { opacity: .3; }
+  .card.shake { animation: shake .42s; }
+
+  .ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    margin: 0;
+    transform: rotate(-2.5deg) scale(1.04);
+    box-shadow: 0 14px 26px rgba(90, 60, 30, .34);
+    cursor: grabbing;
+  }
+
+  /* ===== 政权块（第二列） ===== */
+  .regime-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+  }
+  .regime {
+    border-radius: 13px;
+    padding: 8px 10px 10px;
+    background: #ffffff;
+    box-shadow: 0 2px 7px rgba(60, 110, 160, .13);
+    border: 2px dashed #b6d1e8;
+    transition: border-color .18s, background .18s, transform .18s, box-shadow .18s;
+  }
+  .regime.over {
+    border-color: #4a8f5c;
+    background: #f1f9f2;
+    transform: scale(1.015);
+    box-shadow: 0 0 0 4px rgba(74, 143, 92, .14);
+  }
+  .regime.wrong {
+    border-color: #c0392b;
+    background: #fdf1ef;
+    animation: shake .42s;
+  }
+  .regime-name {
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    color: #22567f;
+    text-align: center;
+    padding: 0 0 6px;
+    border-bottom: 2px solid #c3d8ea;
+    margin-bottom: 8px;
+  }
+
+  /* 放置区：横向排列，放入的卡片更小 */
+  .dropzone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+  }
+  .dropzone:empty::before {
+    content: "拖入建立者 / 治理方式";
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 42px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #a9c4dd;
+    border-radius: 8px;
+    background: #f7fbff;
+  }
+
+  .dropzone > .card {
+    flex: 0 0 auto;
+    font-size: 16px;
+    padding: 8px 11px;
+    letter-spacing: 1px;
+    border-left-width: 5px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(80, 120, 90, .15);
+    cursor: default;
+    animation: pop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .dropzone > .card[data-cat="founder"] {
+    border-left-color: #4a8f5c;
+    background: linear-gradient(180deg, #f4fbf5 0%, #e4f2e8 100%);
+  }
+  .dropzone > .card[data-cat="govern"] {
+    border-left-color: #4a8f5c;
+    background: linear-gradient(180deg, #f4fbf5 0%, #e4f2e8 100%);
+  }
+  .dropzone > .card::after {
+    content: "✓";
+    position: absolute; top: 1px; right: 6px;
+    font-size: 11px; color: #4a8f5c;
+  }
+
+  /* ===== 完成提示 ===== */
+  .done {
+    display: none;
+    margin-top: 18px;
+    padding: 16px 20px;
+    background: #eef8f0;
+    border: 2px solid #7bb98a;
+    border-radius: 14px;
+    animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .done.show { display: block; }
+  .done h3 { margin: 0 0 10px; font-size: 19px; color: #2f6b3f; letter-spacing: 2px; }
+  .done table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  .done th, .done td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #cfe4d4;
+    text-align: left;
+    letter-spacing: 1px;
+  }
+  .done th { color: #2f6b3f; font-weight: 700; }
+  .done td:first-child { font-weight: 700; color: #b5493a; }
+  .done .sub { margin: 10px 0 0; font-size: 14px; }
+
+  /* ===== 浮动提示 ===== */
+  .toast {
+    position: fixed; left: 50%; top: 22px;
+    transform: translate(-50%, -16px);
+    padding: 11px 26px; border-radius: 999px;
+    font-size: 17px; font-weight: 600; letter-spacing: 2px;
+    color: #fff; background: #c0392b;
+    box-shadow: 0 8px 20px rgba(0,0,0,.2);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s, transform .22s;
+    z-index: 10000;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.ok { background: #3f8a55; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(3px); }
+  }
+  @keyframes pop {
+    0% { transform: scale(.75); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 980px) {
+    header h1 { font-size: 24px; letter-spacing: 3px; }
+    .board { grid-template-columns: 1fr; }
+    .column { padding: 12px; }
+    .card-stack {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    .card-stack .card { flex: 1 1 42%; font-size: 18px; padding: 12px 8px; }
+    .card-stack:empty { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>辽夏金的治理</h1>
+    <p class="sub">
+      把左栏的 <b>建立者</b> 和右栏的 <b>治理方式</b> 拖到中间对应的 <b>政权</b> 下面。<br>
+      放对了会留在原处并发出提示音；放错了会弹回原处并发出提示音。
+    </p>
+  </header>
+
+  <div class="bar">
+    <span>已完成 <b id="counter">0 / 7</b></span>
+    <button id="reset">重新开始</button>
+  </div>
+
+  <section class="board">
+    <!-- 第一列：建立者 -->
+    <div class="column">
+      <h2 class="col-title">建 立 者</h2>
+      <div class="card-stack" id="founderCards"></div>
+    </div>
+
+    <!-- 第二列：政权 -->
+    <div class="column middle">
+      <h2 class="col-title">政 权</h2>
+      <div class="regime-list">
+        <div class="regime" data-regime="liao">
+          <div class="regime-name">辽</div>
+          <div class="dropzone"></div>
+        </div>
+        <div class="regime" data-regime="xixia">
+          <div class="regime-name">西夏</div>
+          <div class="dropzone"></div>
+        </div>
+        <div class="regime" data-regime="jin">
+          <div class="regime-name">金</div>
+          <div class="dropzone"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三列：治理方式 -->
+    <div class="column">
+      <h2 class="col-title">治 理 方 式</h2>
+      <div class="card-stack" id="governCards"></div>
+    </div>
+  </section>
+
+  <div class="done" id="done">
+    <h3>🎉 全部正确！知识小结</h3>
+    <table>
+      <tr><th>政权</th><th>建立者</th><th>治理方式</th></tr>
+      <tr><td>辽</td><td>耶律阿保机</td><td>南北面官、四时捺钵</td></tr>
+      <tr><td>西夏</td><td>元昊</td><td>汉制藩称</td></tr>
+      <tr><td>金</td><td>完颜阿骨打</td><td>猛安谋克</td></tr>
+    </table>
+    <p class="sub">
+      补充：元朝在地方推行<b>行省制</b>，设<b>宣政院</b>管辖西藏，修驿道、设驿站，加强对边疆地区的有效管理。
+    </p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= 数据 ================= */
+  const FOUNDERS = [
+    { id: "f1", text: "耶律阿保机", regime: "liao"  },
+    { id: "f2", text: "元昊",       regime: "xixia" },
+    { id: "f3", text: "完颜阿骨打", regime: "jin"   }
+  ];
+  const GOVERNS = [
+    { id: "g1", text: "南北面官", regime: "liao"  },
+    { id: "g2", text: "四时捺钵", regime: "liao"  },
+    { id: "g3", text: "汉制藩称", regime: "xixia" },
+    { id: "g4", text: "猛安谋克", regime: "jin"   }
+  ];
+  const TOTAL = FOUNDERS.length + GOVERNS.length;
+
+  const founderPool = document.getElementById("founderCards");
+  const governPool  = document.getElementById("governCards");
+  const counterEl   = document.getElementById("counter");
+  const doneEl      = document.getElementById("done");
+
+  /* ================= 音效（Web Audio 合成） ================= */
+  let actx = null;
+
+  function ensureAudio() {
+    try {
+      if (!actx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) actx = new AC();
+      }
+      if (actx && actx.state === "suspended") actx.resume();
+    } catch (e) { /* 不支持音频也不影响使用 */ }
+  }
+
+  function tone(freq, delay, dur, type, vol) {
+    if (!actx) return;
+    const t0 = actx.currentTime + delay;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol || 0.18, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  function playOk() {          // 正确：明亮上行两音
+    tone(783.99, 0.00, 0.13, "sine", 0.20);
+    tone(1046.5, 0.09, 0.20, "sine", 0.18);
+  }
+  function playError() {       // 错误：低沉两声
+    tone(220, 0.00, 0.16, "square", 0.11);
+    tone(155, 0.14, 0.24, "square", 0.11);
+  }
+  function playWin() {         // 通关：琶音
+    [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+      tone(f, i * 0.11, 0.28, "sine", 0.18);
+    });
+  }
+
+  /* ================= 浮动提示 ================= */
+  let toastTimer = null;
+  function toast(msg, ok) {
+    let t = document.querySelector(".toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.className = "toast";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.className = "toast" + (ok ? " ok" : "");
+    void t.offsetWidth;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 1200);
+  }
+
+  /* ================= 计数 / 完成 ================= */
+  function placedCount() {
+    return document.querySelectorAll(".dropzone > .card").length;
+  }
+  function updateCounter() {
+    counterEl.textContent = placedCount() + " / " + TOTAL;
+  }
+  function checkDone() {
+    if (placedCount() === TOTAL) {
+      setTimeout(function () {
+        doneEl.classList.add("show");
+        playWin();
+        toast("全部答对，太棒了！", true);
+        doneEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 380);
+    }
+  }
+
+  /* ================= 初始化 ================= */
+  function makeCard(item, cat) {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.dataset.id = item.id;
+    el.dataset.regime = item.regime;
+    el.dataset.cat = cat;
+    el.textContent = item.text;
+    return el;
+  }
+
+  function init() {
+    founderPool.innerHTML = "";
+    governPool.innerHTML = "";
+    document.querySelectorAll(".regime").forEach(function (r) {
+      r.querySelector(".dropzone").innerHTML = "";
+      r.classList.remove("over", "wrong");
+    });
+    doneEl.classList.remove("show");
+
+    FOUNDERS.slice().sort(function () { return Math.random() - 0.5; })
+      .forEach(function (item) { founderPool.appendChild(makeCard(item, "founder")); });
+
+    GOVERNS.slice().sort(function () { return Math.random() - 0.5; })
+      .forEach(function (item) { governPool.appendChild(makeCard(item, "govern")); });
+
+    updateCounter();
+  }
+
+  /* ================= 拖拽逻辑（Pointer Events） ================= */
+  let drag = null;
+
+  function regimeAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest(".regime") : null;
+  }
+
+  document.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (drag) return;
+
+    const card = e.target.closest(".card");
+    // 已放入政权块的卡片不可再拖
+    if (!card || card.closest(".regime")) return;
+
+    e.preventDefault();
+    ensureAudio();
+
+    const rect = card.getBoundingClientRect();
+    const ghost = card.cloneNode(true);
+    ghost.classList.add("ghost");
+    ghost.classList.remove("dragging", "shake");
+    ghost.style.width  = rect.width + "px";
+    ghost.style.height = rect.height + "px";
+    ghost.style.left   = rect.left + "px";
+    ghost.style.top    = rect.top + "px";
+    ghost.style.transition = "none";
+    document.body.appendChild(ghost);
+
+    card.classList.add("dragging");
+
+    drag = {
+      card: card,
+      ghost: ghost,
+      dx: e.clientX - rect.left,
+      dy: e.clientY - rect.top,
+      over: null
+    };
+  });
+
+  document.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    e.preventDefault();
+
+    drag.ghost.style.left = (e.clientX - drag.dx) + "px";
+    drag.ghost.style.top  = (e.clientY - drag.dy) + "px";
+
+    const regime = regimeAt(e.clientX, e.clientY);
+    if (regime !== drag.over) {
+      if (drag.over) drag.over.classList.remove("over");
+      if (regime) regime.classList.add("over");
+      drag.over = regime;
+    }
+  }, { passive: false });
+
+  document.addEventListener("pointerup", function () {
+    if (!drag) return;
+
+    const card   = drag.card;
+    const ghost  = drag.ghost;
+    const regime = drag.over;
+    drag = null;
+
+    if (regime) regime.classList.remove("over");
+
+    // 没有放到政权上：静默返回
+    if (!regime) {
+      ghost.remove();
+      card.classList.remove("dragging");
+      return;
+    }
+
+    if (regime.dataset.regime === card.dataset.regime) {
+      /* ===== 正确：留在政权块内（缩小横向排列） ===== */
+      const text = card.textContent;
+      const cat  = card.dataset.cat;
+      ghost.remove();
+      card.remove();
+
+      const placed = document.createElement("div");
+      placed.className = "card placed";
+      placed.dataset.cat = cat;
+      placed.textContent = text;
+      regime.querySelector(".dropzone").appendChild(placed);
+
+      playOk();
+      toast("✓ 正确！", true);
+      updateCounter();
+      checkDone();
+
+    } else {
+      /* ===== 错误：飞回原位 + 提示音 ===== */
+      const back = card.getBoundingClientRect();
+      ghost.style.transition = "left .22s ease, top .22s ease, opacity .22s ease, transform .22s ease";
+      requestAnimationFrame(function () {
+        ghost.style.left = back.left + "px";
+        ghost.style.top  = back.top + "px";
+        ghost.style.transform = "rotate(0deg) scale(1)";
+        ghost.style.opacity = "0.15";
+      });
+      setTimeout(function () { ghost.remove(); }, 240);
+
+      card.classList.remove("dragging");
+      card.classList.add("shake");
+      setTimeout(function () { card.classList.remove("shake"); }, 450);
+
+      regime.classList.add("wrong");
+      setTimeout(function () { regime.classList.remove("wrong"); }, 520);
+
+      playError();
+      toast("✗ 不对哦，再想一想～", false);
+    }
+  });
+
+  document.addEventListener("pointercancel", function () {
+    if (!drag) return;
+    drag.ghost.remove();
+    drag.card.classList.remove("dragging");
+    if (drag.over) drag.over.classList.remove("over");
+    drag = null;
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    ensureAudio();
+    init();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
